@@ -1,38 +1,66 @@
-import sys
-from collections import Counter
+from __future__ import annotations
 
-def read_file(path: str) -> str:
+import argparse
+import string
+from collections import Counter
+from pathlib import Path
+
+
+def read_file(path: Path) -> str:
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise SystemExit(f"File not found: {path}")
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError as e:
+        raise SystemExit(f"File not found: {path}") from e
+    except IsADirectoryError as e:
+        raise SystemExit(f"Expected a file but got a directory: {path}") from e
+
+
+def normalize_text(text: str) -> list[str]:
+    """
+    Lowercase + remove punctuation + split into words.
+    """
+    text = text.lower()
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    return text.split()
+
 
 def count_lines(text: str) -> int:
     return len(text.splitlines())
 
 
-def count_words(text: str) -> int:
-    return len(text.lower().split())
+def count_words(words: list[str]) -> int:
+    return len(words)
 
 
-def top_words(text: str, n: int=10) -> list[tuple[str, int]]:
-    words = text.lower().split()
-    counter = Counter(words)
-    return counter.most_common(n)
+def top_words(words: list[str], n: int) -> list[tuple[str, int]]:
+    return Counter(words).most_common(n)
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python word_stats.py <file>")
-        sys.exit(1)
-        
-    raw_text = read_file(sys.argv[1])
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="word_stats",
+        description="Count lines, words, and top frequent words in a text file.",
+    )
+    parser.add_argument("file", type=Path, help="Path to the input text file")
+    parser.add_argument("--top", "-t", type=int, default=10, help="How many top words to show (default: 10)")
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.top <= 0:
+        raise SystemExit("--top must be a positive integer")
+
+    raw_text = read_file(args.file)
+    words = normalize_text(raw_text)
+
     print(f"Lines: {count_lines(raw_text)}")
-    print(f"Words: {count_words(raw_text)}")
-    topwords = top_words(raw_text)
+    print(f"Words: {count_words(words)}")
     print("\nTop words:")
-    for word, count in topwords:
+
+    for word, count in top_words(words, args.top):
         print(f"{word}: {count}")
 
 
