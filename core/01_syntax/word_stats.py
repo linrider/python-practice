@@ -15,13 +15,14 @@ def read_file(path: Path) -> str:
         raise SystemExit(f"Expected a file but got a directory: {path}") from e
 
 
-def normalize_text(text: str) -> list[str]:
+def normalize_text(text: str, min_length: int) -> list[str]:
     """
     Lowercase + remove punctuation + split into words.
     """
     text = text.lower()
     text = text.translate(str.maketrans("", "", string.punctuation))
-    return text.split()
+    words = text.split()
+    return [word for word in words if len(word) >= min_length]
 
 
 def count_lines(text: str) -> int:
@@ -43,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("file", type=Path, help="Path to the input text file")
     parser.add_argument("--top", "-t", type=int, default=10, help="How many top words to show (default: 10)")
+    parser.add_argument("--min-length", "-l", type=int, default=3, help="The minimal length of words for processing (default: 3)")
     return parser
 
 
@@ -54,7 +56,7 @@ def main() -> None:
         raise SystemExit("--top must be a positive integer")
 
     raw_text = read_file(args.file)
-    words = normalize_text(raw_text)
+    words = normalize_text(raw_text, args.min_length)
 
     print(f"Lines: {count_lines(raw_text)}")
     print(f"Words: {count_words(words)}")
