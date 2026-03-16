@@ -45,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("file", type=Path, help="Path to the input text file")
     parser.add_argument("--top", "-t", type=int, default=10, help="How many top words to show (default: 10)")
     parser.add_argument("--min-length", "-l", type=int, default=3, help="The minimal length of words for processing (default: 3)")
+    parser.add_argument("--output", "-o", type=Path, help="Write result to file instead of stdout")
     return parser
 
 
@@ -58,13 +59,23 @@ def main() -> None:
     raw_text = read_file(args.file)
     words = normalize_text(raw_text, args.min_length)
 
-    print(f"Lines: {count_lines(raw_text)}")
-    print(f"Words: {count_words(words)}")
-    print("\nTop words:")
+    result_lines = [
+        f"Lines: {count_lines(raw_text)}",
+        f"Words: {count_words(words)}",
+        "",
+        "Top words:"
+    ]
 
     for word, count in top_words(words, args.top):
-        print(f"{word}: {count}")
+        result_lines.append(f"{word}: {count}")
 
-
+    result = "\n".join(result_lines)
+    
+    if args.output:
+        args.output.write_text(result, encoding="utf-8")
+        print(f"Saved result to {args.output}")
+    else:
+        print(result)
+    
 if __name__ == "__main__":
     main()
